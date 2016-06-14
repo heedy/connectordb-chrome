@@ -1,0 +1,16 @@
+{
+    "manifest_version": 2,
+    "name": "ConnectorDB Chrome Logger",
+    "description": "Logs the websites you visit to connectordb",
+    "version": "0.2.2",
+    "permissions": [
+        "tabs",
+        "storage",
+        "https://connectordb.com/*"
+    ],
+    "background": {
+        "scripts": ["q.js","connectordb_q.js","background.js"]
+    },
+
+    "options_page": "login.html"
+}
