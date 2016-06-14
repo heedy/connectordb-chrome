@@ -1,91 +1,127 @@
-function saveCred(uname,pass) {
-	localStorage.setItem("cdb_dname",uname+"/chrome");
-	localStorage.setItem("cdb_apikey",pass);
-	disable();
-	window.close();
-}
+const DEVICE_NAME = "chrome";
+const STREAM_NAME = "history";
 
-function makeStream(cdb, uname,pass) {
-	connector.readStream(uname,"chrome","history").then(function (result) {
-		saveCred(uname,pass);
-	}).catch(function(res) {
-		if (res.status==401) {
-			console.error(res.response);
-		} else if (res.status==404) {
-			connector.createStream(uname,"web_browser","history",{type: "object",properties: {url: {type: "string" }, title: {type: "string"}}}).then(function(res) {
-				saveCred(uname,pass);
-			}).catch(function(res) {
-				console.log(res.response);
-			});
-		}
-	}).done();
+function saveCred(uname, pass) {
+    localStorage.setItem("cdb_dname", uname);
+    localStorage.setItem("cdb_apikey", pass);
+
 }
 
 function handleLogin(e) {
-	e.preventDefault();
-	var uname = document.getElementById("inputUser").value;
-	var pwd = document.getElementById("inputPassword").value;
+    e.preventDefault();
+    var uname = document.getElementById("inputUser").value;
+    var pwd = document.getElementById("inputPassword").value;
 
-	document.getElementById("loginform").removeEventListener("submit",handleLogin);
+    document.getElementById("loginform").removeEventListener("submit", handleLogin);
 
-	connector = new ConnectorDB(uname,pwd);
-	connector.readDevice(uname,"user").then(function (result) {
-		connector.readDevice(uname,"web_browser").then(function(res) {
-			makeStream(connector,uname,res.apikey);
-		}).catch(function(res) {
-			if (res.status==401) {
-				console.error(res.response);
-			} else if (res.status==404) {
-				connector.createDevice(uname,"web_browser").then(function(res) {
-					makeStream(connector,uname,res.apikey);
-				}).catch(function(res) {
-					console.log(res.response);
-				});
-			}
-		});
-	}).catch(function (req) {
-		console.log("Connection error:"+req);
-	}).done();
+    cdb = new connectordb.ConnectorDB(uname, pwd);
 
-	return false;
+    console.log("Starting login...");
+    // First, check if the user can be accessed using these credentials
+    cdb.readUser(uname, "user").then(function(result) {
+        if (result.ref !== undefined) {
+            throw new Error(result.msg);
+        }
+        console.log("Checking if device exists...");
+        return cdb.readDevice(uname, DEVICE_NAME);
+    })
+    // Then, see if the device exists, and create it if it doesn't
+        .then(function(result) {
+        if (result.ref !== undefined) {
+            // The device doesn't exist. Try to create it
+            console.log("Creating new device...");
+            return cdb.createDevice(uname, {
+                name: DEVICE_NAME,
+                description: "Google Chrome browsing history"
+            });
+
+        }
+        return result;
+    })
+    // Next, check if the history stream exists, and create it if it doesn't exist
+        .then(function(result) {
+        console.log(result);
+        if (result.ref !== undefined) {
+            throw new Error(result.msg);
+        }
+        saveCred(uname + "/" + DEVICE_NAME, result.apikey);
+        console.log("Checking if stream exists...");
+        return cdb.readStream(uname, DEVICE_NAME, STREAM_NAME);
+    }).then(function(result) {
+        if (result.ref !== undefined) {
+            // The stream doesn't exist. Try to create it
+            return cdb.createStream(uname, DEVICE_NAME, {
+                name: STREAM_NAME,
+                description: "All websites visited",
+                schema: JSON.stringify({
+                    type: "object",
+                    properties: {
+                        url: {
+                            type: "string"
+                        },
+                        title: {
+                            type: "string"
+                        }
+                    }
+                }),
+                datatype: "browser.history"
+            });
+        }
+        return result;
+    })
+    // Finally, finish setup
+        .then(function(result) {
+        if (result.ref !== undefined) {
+            throw new Error(result.msg);
+        }
+        disable();
+        window.close();
+    }).catch(function(req) {
+        saveCred("", "");
+        console.log(req);
+        alert(req);
+    });
+    console.log("EOF");
+    enable();
+    return true;
 }
 
 function handleLogout(e) {
-	e.preventDefault();
-	document.getElementById("loginform").removeEventListener("submit",handleLogout);
-	localStorage.setItem("cdb_dname","");
-	localStorage.setItem("cdb_apikey","");
-	enable();
+    e.preventDefault();
+    document.getElementById("loginform").removeEventListener("submit", handleLogout);
+    localStorage.setItem("cdb_dname", "");
+    localStorage.setItem("cdb_apikey", "");
+    enable();
 }
 
 function disable() {
-	document.getElementById("inputUser").disabled=true;
-	document.getElementById("inputPassword").disabled=true;
-	document.getElementById("signinbtn").innerHTML= "Log out";
-	document.getElementById("loginform")
-          .addEventListener("submit", handleLogout, false);
+    document.getElementById("inputUser").disabled = true;
+    document.getElementById("inputPassword").disabled = true;
+    document.getElementById("signinbtn").innerHTML = "Log out";
+    document.getElementById("loginform").addEventListener("submit", handleLogout, false);
 }
 
 function enable() {
-	document.getElementById("inputUser").disabled=false;
-	document.getElementById("inputUser").value="";
-	document.getElementById("inputPassword").disabled=false;
-	document.getElementById("inputPassword").value=""
-	document.getElementById("signinbtn").innerHTML = "Sign in";
-	document.getElementById("loginform")
-          .addEventListener("submit", handleLogin, false);
+    console.log("enable");
+    document.getElementById("inputUser").disabled = false;
+    document.getElementById("inputUser").value = "";
+    document.getElementById("inputPassword").disabled = false;
+    document.getElementById("inputPassword").value = ""
+    document.getElementById("signinbtn").innerHTML = "Sign in";
+    document.getElementById("loginform").addEventListener("submit", handleLogin, false);
 }
 
 function isLoggedIn() {
-	dname = localStorage.getItem("connector_dname") || "";
-	return (dname.length > 1)
+    console.log("logincheck");
+    dname = localStorage.getItem("cdb_dname") || "";
+    return (dname.length > 1)
 }
 
-window.addEventListener("load", function()
-{
-	if (isLoggedIn()) {
-		disable();
-	} else {
-		enable();
-	}
+window.addEventListener("load", function() {
+    console.log("onload");
+    if (isLoggedIn()) {
+        disable();
+    } else {
+        enable();
+    }
 }, false);
