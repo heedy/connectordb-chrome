@@ -8,9 +8,10 @@ function isLoggedIn() {
 function getConnector() {
     dname = localStorage.getItem("cdb_dname") || "";
     apikey = localStorage.getItem("cdb_apikey") || "";
+    hostname = localStorage.getItem("cdb_hostname") || "";
     if (dname.length > 1) {
         uname = dname.split("/")[0];
-        return new connectordb.ConnectorDB(apikey);
+        return new connectordb.ConnectorDB(apikey, undefined, hostname);
     }
     return null;
 }
