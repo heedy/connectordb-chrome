@@ -1,20 +1,21 @@
 const DEVICE_NAME = "chrome";
 const STREAM_NAME = "history";
 
-function saveCred(uname, pass) {
+function saveCred(uname, pass, hostname) {
     localStorage.setItem("cdb_dname", uname);
     localStorage.setItem("cdb_apikey", pass);
-
+    localStorage.setItem("cdb_hostname", hostname);
 }
 
 function handleLogin(e) {
     e.preventDefault();
     var uname = document.getElementById("inputUser").value;
     var pwd = document.getElementById("inputPassword").value;
+    var hostname = document.getElementById("inputHostname").value;
 
     document.getElementById("loginform").removeEventListener("submit", handleLogin);
 
-    cdb = new connectordb.ConnectorDB(uname, pwd);
+    cdb = new connectordb.ConnectorDB(uname, pwd, hostname);
 
     console.log("Starting login...");
     // First, check if the user can be accessed using these credentials
@@ -44,7 +45,7 @@ function handleLogin(e) {
         if (result.ref !== undefined) {
             throw new Error(result.msg);
         }
-        saveCred(uname + "/" + DEVICE_NAME, result.apikey);
+        saveCred(uname + "/" + DEVICE_NAME, result.apikey, hostname);
         console.log("Checking if stream exists...");
         return cdb.readStream(uname, DEVICE_NAME, STREAM_NAME);
     }).then(function(result) {
@@ -77,7 +78,7 @@ function handleLogin(e) {
         disable();
         window.close();
     }).catch(function(req) {
-        saveCred("", "");
+        saveCred("", "", "");
         console.log(req);
         alert(req);
     });
@@ -91,10 +92,12 @@ function handleLogout(e) {
     document.getElementById("loginform").removeEventListener("submit", handleLogout);
     localStorage.setItem("cdb_dname", "");
     localStorage.setItem("cdb_apikey", "");
+    localStorage.setItem("cdb_hostname", "");
     enable();
 }
 
 function disable() {
+    document.getElementById("inputHostname").disabled = true;
     document.getElementById("inputUser").disabled = true;
     document.getElementById("inputPassword").disabled = true;
     document.getElementById("signinbtn").innerHTML = "Log out";
@@ -103,6 +106,7 @@ function disable() {
 
 function enable() {
     console.log("enable");
+    document.getElementById("inputHostname").disabled = false;
     document.getElementById("inputUser").disabled = false;
     document.getElementById("inputUser").value = "";
     document.getElementById("inputPassword").disabled = false;
