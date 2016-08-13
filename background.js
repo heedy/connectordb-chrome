@@ -1,44 +1,81 @@
-uname = ""
+var defaultOptions = {
+    // Time in milliseconds between synchronization attempts
+    syncDelay: 0,
+    enabled: true
+};
 
 function isLoggedIn() {
-    dname = localStorage.getItem("cdb_dname") || "";
-    return (dname.length > 1)
+    var cred = localStorage.getItem("cdb_credentials") || "";
+    return (cred.length > 1)
 }
 
-function getConnector() {
-    dname = localStorage.getItem("cdb_dname") || "";
-    apikey = localStorage.getItem("cdb_apikey") || "";
-    hostname = localStorage.getItem("cdb_hostname") || "";
-    if (dname.length > 1) {
-        uname = dname.split("/")[0];
-        return new connectordb.ConnectorDB(apikey, undefined, hostname);
+// Either returns the credentials used in the extension, or null if
+// not logged in
+function getCredentials() {
+    var cred = localStorage.getItem("cdb_credentials") || "";
+    if (cred != "") {
+        return JSON.parse(cred);
     }
     return null;
 }
 
-function Initialize() {
+// Returns the options set up for the extension
+function getOptions() {
+    var opt = localStorage.getItem("cdb_options") || "";
+    if (opt != "") {
+        return Object.assign({}, defaultOptions, JSON.parse(opt));
+    } else {
+        localStorage.setItem("cdb_options", JSON.stringify(defaultOptions));
+        return defaultOptions;
+    }
+}
+
+// Returns the ConnectorDB object or null
+function getCDB() {
+    var cred = getCredentials();
+    if (cred != null) {
+        var cdb = new connectordb.ConnectorDB(cred.apikey, undefined, cred.hostname);
+        cdb.chrome_cred = cred;
+        return cdb;
+    }
+    return null
+}
+
+// Called on initialization
+function login() {
     chrome.tabs.create({url: "login.html"})
 }
 
-if (!isLoggedIn()) {
-    Initialize();
+if (getCredentials() == null) {
+    login();
 }
 
 function LogDatapoint(pgurl, title) {
+    // Don't show new tabs
     if (pgurl != "chrome://newtab/") {
-        c = getConnector();
-        if (c != null) {
-            console.log({url: pgurl, title: title});
+        // Check the sync delay - if it is 0, we write the datapoints
+        // directly
+        var opt = getOptions();
+        // Don't log the datapoint if logging is disabled
+        if (!opt.enabled) {
+            return;
+        }
 
-            c.insertStream(uname, "chrome", "history", {
-                url: pgurl,
-                title: title
-            });
+        console.log({url: pgurl, title: title});
 
+        if (opt.syncDelay == 0) {
+            var cdb = getCDB()
+            if (cdb != null) {
+                cdb.insertStream(cdb.chrome_cred.username, cdb.chrome_cred.devicename, "history", {
+                    url: pgurl,
+                    title: title
+                });
+            }
         }
     }
 }
 
+// The rest are special listeners that try to catch the different ways pages can be changed.
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     if (changeInfo.url != null) {
         LogDatapoint(tab.url, tab.title)
@@ -67,3 +104,14 @@ chrome.windows.onFocusChanged.addListener(function(windowId) {
     }
 
 })
+
+// Set up the extension icon so that when clicking, it opens ConnectorDB
+chrome.browserAction.onClicked.addListener(function(activeTab) {
+    var c = getCredentials();
+    if (c == null) {
+        login();
+    } else {
+        chrome.tabs.create({url: c.hostname});
+    }
+
+});

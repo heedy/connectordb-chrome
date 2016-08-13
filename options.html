@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>Login - ConnectorDB Chrome Extension</title>
+        <title>Options - ConnectorDB Chrome Extension</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -23,16 +23,14 @@
     <img id="connectordb-logo" src="img/logo.png" alt="ConnectorDB Extension"></img>
 
     <form class="login-form">
-      <input type="text" id="username" placeholder="username" required autofocus/>
-      <input type="password" id="password" placeholder="password" required/>
-      <hr/>
-      <input type="text" id="server" placeholder="server url" value="https://connectordb.com" required/>
-      <input type="text" id="device" placeholder="device name" value="chrome" required/>
-      <button name="loginbtn" id="loginbtn">login</button>
+      <button name="enable_disable" id="enable_disable">disable logging</button>
+      <!--<hr/>-->
+      <button name="loginbtn" id="loginbtn">log out</button>
       <!--
       <p class="message">Not registered? <a href="#">Create an account</a></p>
     -->
     </form>
+    <a id="linkme" style="color:black; text-decoration: none;"><h5 id="textme"></h5></a>
   </div>
 </div>
 
@@ -40,7 +38,7 @@
 <script src="js/vendor/jquery-ui.min.js"></script>
 <script src="js/plugins.js"></script>
 <script src="connectordb.min.js"></script>
-<script src="js/login.js"></script>
+<script src="js/options.js"></script>
 
 <div id="footer">
     ConnectorDB Chrome Extension<br/>
