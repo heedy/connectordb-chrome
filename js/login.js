@@ -55,7 +55,8 @@ function login() {
                 return cdb.createDevice(usrname, {
                     name: device,
                     nickname: "Chrome Browser",
-                    description: "Google Chrome Extension"
+                    description: "Google Chrome Extension",
+                    icon: "material:web"
                 });
 
             }
@@ -87,7 +88,8 @@ function login() {
                             }
                         }
                     }),
-                    datatype: "browser.history"
+                    datatype: "browser.history",
+                    icon: "material:history"
                 });
             }
             return result;
