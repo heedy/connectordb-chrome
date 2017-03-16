@@ -2,8 +2,8 @@
     "manifest_version": 2,
     "name": "ConnectorDB Chrome Logger",
     "short_name": "connectordb",
-    "description": "Logs the websites you visit to connectordb",
-    "version": "0.0.4",
+    "description": "Logs the websites you visit to ConnectorDB",
+    "version": "0.0.6",
     "permissions": [
         "tabs",
         "storage",
